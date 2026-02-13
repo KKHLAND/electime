@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>선택과목 명렬표 좌석표 생성시스템</title>
+    <title>선택과목 코드 변환 시스템</title>
     
     <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -305,7 +305,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useCallback, useRef, useMemo, StrictMode } = React;
+        const { useState, useCallback, useRef, useMemo, StrictMode, useEffect } = React;
 
         /* ======= Shared Utility ======= */
         const findHeaderRowIndex = (rows) => {
@@ -484,6 +484,7 @@
             const [selectedCode, setSelectedCode] = useState('');
             const [teacherName, setTeacherName] = useState('');
             const [filteredStudents, setFilteredStudents] = useState([]);
+            const [seatingStudents, setSeatingStudents] = useState([]); // 좌석 배정용 상태 (랜덤 가능)
             const [viewMode, setViewMode] = useState('roster');
             const [seatingCols, setSeatingCols] = useState(6);
 
@@ -499,34 +500,57 @@
                 return scMap;
             }, [rawData]);
 
-            const handleSubjectChange = (subj) => { setSelectedSubject(subj); setSelectedCode(''); setFilteredStudents([]); };
+            // 필터가 변경될 때마다 seatingStudents를 초기화 (번호순)
+            useEffect(() => {
+                setSeatingStudents([...filteredStudents]);
+            }, [filteredStudents]);
+
+            const handleSubjectChange = (subj) => { 
+                setSelectedSubject(subj); 
+                setSelectedCode(''); 
+                setFilteredStudents([]); 
+                setSeatingStudents([]); 
+            };
+            
             const handleCodeChange = (code) => {
                 setSelectedCode(code);
-                if (!code || !selectedSubject || !rawData) { setFilteredStudents([]); return; }
+                if (!code || !selectedSubject || !rawData) { 
+                    setFilteredStudents([]); 
+                    setSeatingStudents([]);
+                    return; 
+                }
                 const students = rawData
                     .filter(r => { const v = r[selectedSubject]; return v && String(v).trim().toUpperCase() === code; })
                     .map(r => ({ 학번: String(r['학번'] || '').trim(), 이름: String(r['이름'] || '').trim() }))
                     .sort((a, b) => parseInt(a.학번, 10) - parseInt(b.학번, 10));
                 students.forEach((s, i) => s.순번 = i + 1);
+                
                 setFilteredStudents(students);
+                // useEffect will handle setSeatingStudents
+            };
+
+            const handleShuffle = () => {
+                const shuffled = [...seatingStudents].sort(() => Math.random() - 0.5);
+                setSeatingStudents(shuffled);
             };
 
             const availableCodes = selectedSubject ? (subjectCodeMap[selectedSubject] || []) : [];
             const className = selectedSubject && selectedCode ? `${selectedSubject} ${selectedCode}` : '';
 
             const seatingRows = useMemo(() => {
-                const rows = [], total = filteredStudents.length, cols = seatingCols;
+                // seatingStudents 사용
+                const rows = [], total = seatingStudents.length, cols = seatingCols;
                 const numRows = Math.ceil(total / cols);
                 for (let r = 0; r < numRows; r++) {
                     const row = [];
                     for (let c = 0; c < cols; c++) {
                         const idx = r % 2 === 0 ? r * cols + c : r * cols + (cols - 1 - c);
-                        row.push(idx < total ? filteredStudents[idx] : null);
+                        row.push(idx < total ? seatingStudents[idx] : null);
                     }
                     rows.push(row);
                 }
                 return rows;
-            }, [filteredStudents, seatingCols]);
+            }, [seatingStudents, seatingCols]);
 
             const handleDownloadCSV = () => {
                 if (!filteredStudents.length) return;
@@ -590,6 +614,12 @@
                                     )}
                                 </div>
                                 <div style={{ display:'flex', gap:'0.5rem' }}>
+                                    {viewMode === 'seating' && (
+                                        <>
+                                            <button className="btn btn-secondary" onClick={handleShuffle}><i className="ph ph-shuffle"></i> 랜덤 배정</button>
+                                            <button className="btn btn-secondary" onClick={() => setSeatingStudents([...filteredStudents])}><i className="ph ph-sort-ascending"></i> 번호순</button>
+                                        </>
+                                    )}
                                     <button className="btn btn-success" onClick={handleDownloadCSV}><i className="ph ph-file-csv"></i> CSV 다운로드</button>
                                     <button className="btn btn-primary" onClick={() => window.print()}><i className="ph ph-printer"></i> 인쇄</button>
                                 </div>
@@ -727,7 +757,7 @@
             return (
                 <div className="app-container">
                     <header className="hero-header no-print">
-                        <h1 className="hero-title">선택과목 명렬표 좌석표 생성시스템</h1>
+                        <h1 className="hero-title">선택과목 코드 변환 시스템</h1>
                         <p className="hero-subtitle">학년별, 학급별 선택과목 자동 변환 · 명렬표 · 좌석표</p>
                         <div className="mode-toggle">
                             <button className={`mode-btn mode-convert ${appMode === 'convert' ? 'active' : ''}`} onClick={() => setAppMode('convert')}>
