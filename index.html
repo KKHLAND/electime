@@ -90,7 +90,8 @@
         .view-btn { padding: 0.5rem 1.2rem; border-radius: 9999px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; color: var(--color-text-muted); background: transparent; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; gap: 0.4rem; }
         
         /* Modified View Buttons Active States */
-        .view-btn.view-roster.active { background: white; color: var(--color-primary); box-shadow: var(--shadow-sm); }
+        /* Changed Roster button active color to Indigo (#4f46e5) */
+        .view-btn.view-roster.active { background: #4f46e5; color: white; box-shadow: var(--shadow-sm); }
         .view-btn.view-seating.active { background: #059669; color: white; box-shadow: var(--shadow-sm); }
         
         .hidden { display: none; }
@@ -161,7 +162,14 @@
             width: fit-content; /* Adjust width to content */
         }
         
-        .seating-grid { display: grid; gap: 0.5rem; justify-content: center; margin: 0 auto; }
+        /* SCREEN GRID */
+        .seating-grid { 
+            display: grid; 
+            gap: 0.5rem; 
+            justify-content: center; 
+            margin: 0 auto; 
+            /* Screen: uses inline style for columns but defaults to minmax here conceptually */
+        }
         .seat-cell { border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 0.4rem 0.2rem; text-align: center; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: all 0.2s; }
         .seat-cell:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
         .seat-cell .s-num { font-size: 0.65rem; color: var(--color-text-muted); }
@@ -254,29 +262,35 @@
                 print-color-adjust: exact; 
                 padding: 10px 3rem !important; /* Increased Size */
                 font-size: 14pt !important; 
-                margin-bottom: 30px !important; /* Increased Spacing */
+                margin-bottom: 15px !important; /* Reduced Spacing to save vertical space */
                 width: fit-content; 
                 margin-left: auto; 
                 margin-right: auto; 
                 border-radius: 10px !important;
             }
             
-            .seating-grid { gap: 6px !important; }
+            /* GRID OVERRIDE FOR PRINT: Use 1fr to expand */
+            .seating-grid { 
+                gap: 4px !important; /* Reduced gap */
+                display: grid !important;
+                grid-template-columns: repeat(var(--seating-cols, 6), 1fr) !important;
+                width: 100% !important;
+            }
             
             /* MODIFIED: Seat Cell for Print */
             .seat-cell { 
                 border: 1.5px solid #333 !important; 
                 break-inside: avoid; 
                 padding: 4px 2px !important; 
-                min-height: 85px !important; /* Increased Height significantly */
+                min-height: 90px !important; /* Reduced Height to fit page */
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: center !important;
                 align-items: center !important;
             }
-            .seat-cell .s-num { font-size: 9pt; margin-bottom: 2px; } 
-            .seat-cell .s-id { font-size: 9pt; margin-bottom: 2px; } 
-            .seat-cell .s-name { font-size: 13pt; font-weight: bold; } /* Slightly bigger name */
+            .seat-cell .s-num { font-size: 10pt; margin-bottom: 2px; } /* Slightly reduced font */
+            .seat-cell .s-id { font-size: 10pt; margin-bottom: 2px; } /* Slightly reduced font */
+            .seat-cell .s-name { font-size: 17pt; font-weight: bold; } /* Slightly reduced font */
         }
         .print-header-container { display: none; }
         .print-footer { display: none; }
@@ -630,7 +644,8 @@
 
                                 <div className="blackboard">탁 자</div>
 
-                                <div className="seating-grid" style={{ gridTemplateColumns: `repeat(${seatingCols}, minmax(80px, 120px))` }}>
+                                {/* Use style variable for columns to allow CSS override in print */}
+                                <div className="seating-grid" style={{ '--seating-cols': seatingCols, gridTemplateColumns: `repeat(${seatingCols}, minmax(80px, 120px))` }}>
                                     {seatingRows.map((row, ri) =>
                                         row.map((student, ci) => (
                                             <div key={`${ri}-${ci}`} className={`seat-cell ${!student ? 'empty' : ''}`}>
@@ -782,8 +797,8 @@
                                     <span className="file-name">{uploadedFile?.name}</span>
                                     <span className="file-count">· {rawData.length}명 로드됨</span>
                                     <div style={{flex:1}}></div>
-                                    <button className="btn btn-secondary" onClick={handleReset} style={{padding:'0.4rem 1rem', fontSize:'0.85rem'}}>
-                                        <i className="ph ph-arrow-counter-clockwise"></i> 다른 파일
+                                    <button className="btn btn-danger" onClick={handleReset} style={{padding:'0.4rem 1rem', fontSize:'0.85rem'}}>
+                                        <i className="ph ph-arrow-counter-clockwise"></i> 업로드 초기화
                                     </button>
                                 </div>
                             </div>
