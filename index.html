@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>선택과목 명렬표/좌석표 생성기</title>
+    <title>선택과목 명렬표 좌석표 생성시스템</title>
     
     <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -727,7 +727,7 @@
             return (
                 <div className="app-container">
                     <header className="hero-header no-print">
-                        <h1 className="hero-title">선택과목 코드 변환 시스템</h1>
+                        <h1 className="hero-title">선택과목 명렬표 좌석표 생성시스템</h1>
                         <p className="hero-subtitle">학년별, 학급별 선택과목 자동 변환 · 명렬표 · 좌석표</p>
                         <div className="mode-toggle">
                             <button className={`mode-btn mode-convert ${appMode === 'convert' ? 'active' : ''}`} onClick={() => setAppMode('convert')}>
