@@ -3,15 +3,25 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>선택과목 코드 변환 시스템</title>
+    <title>선택과목 명렬표 좌석표 생성 시스템</title>
     
+    <!-- Libraries -->
     <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind CSS (for quick utility classes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
@@ -28,818 +38,944 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: var(--color-bg-page); color: var(--color-text-main); font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; min-height: 100vh; }
+        body {
+            background-color: var(--color-bg-page);
+            color: var(--color-text-main);
+            font-family: 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
         .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+
         .hero-header {
             background: linear-gradient(-45deg, #1e1b4b, #312e81, #4c1d95, #581c87);
-            background-size: 400% 400%; animation: gradientBG 15s ease infinite;
-            color: white; padding: 2.5rem 1.5rem 6rem; text-align: center;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: white;
+            padding: 3rem 1.5rem 6rem;
+            text-align: center;
         }
-        @keyframes gradientBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .hero-title { font-size: 3.0rem; font-weight: 800; margin-bottom: 0.5rem; }
-        .hero-subtitle { font-size: 1rem; opacity: 0.9; margin-bottom: 1.5rem; }
-        .mode-toggle { display: inline-flex; background: rgba(255,255,255,0.15); border-radius: 9999px; padding: 4px; gap: 4px; backdrop-filter: blur(10px); }
-        .mode-btn { padding: 0.6rem 1.8rem; border-radius: 9999px; border: none; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; color: rgba(255,255,255,0.7); background: transparent; display: flex; align-items: center; gap: 0.5rem; font-family: 'Noto Sans KR', sans-serif; }
-        .mode-btn:hover { color: white; background: rgba(255,255,255,0.1); }
-        
-        /* Modified Mode Buttons Active States */
-        .mode-btn.active.mode-convert { background: white; color: var(--color-primary); box-shadow: var(--shadow-md); }
-        .mode-btn.active.mode-roster { background: #10b981; color: white; box-shadow: var(--shadow-md); } /* Emerald Green */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
-        .main-content { width: 95%; max-width: 1600px; margin: -4rem auto 2rem; position: relative; z-index: 10; }
-        .card { background: var(--color-bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 2rem; margin-bottom: 2rem; }
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .form-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--color-text-muted); }
-        .form-control { width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 0.95rem; font-family: 'Noto Sans KR', sans-serif; transition: border-color 0.2s; }
-        .form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
-        .dropzone-area { border: 2px dashed var(--color-border); border-radius: var(--radius-md); padding: 3rem; text-align: center; cursor: pointer; background: #fafafa; transition: all 0.2s; }
+        .hero-title { font-size: 3.0rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .hero-subtitle { font-size: 1rem; opacity: 0.9; }
+
+        .main-content {
+            width: 95%; max-width: 1600px; margin: -4rem auto 2rem; position: relative; z-index: 10;
+        }
+
+        .card {
+            background: var(--color-bg-card); border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg); padding: 2rem; margin-bottom: 2rem;
+        }
+
+        .config-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;
+        }
+        .form-control {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--color-border);
+            border-radius: var(--radius-md); font-size: 0.95rem;
+        }
+
+        .dropzone-area {
+            border: 2px dashed var(--color-border); border-radius: var(--radius-md);
+            padding: 3rem; text-align: center; cursor: pointer; background: #fafafa;
+            transition: all 0.2s;
+        }
         .dropzone-area:hover { border-color: var(--color-primary); background: #f5f3ff; }
-        .dropzone-area.dragging { border-color: var(--color-primary); background: #eff6ff; transform: scale(1.02); }
-        .action-bar { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
-        .btn { padding: 0.75rem 1.5rem; border-radius: 2rem; border: none; font-weight: 600; cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.5rem; font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s; }
-        .btn:hover { transform: translateY(-1px); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .dropzone-area.dragging {
+            border-color: var(--color-primary);
+            background: #eff6ff;
+            transform: scale(1.02);
+        }
+
+        .action-bar { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+        .btn {
+            padding: 0.75rem 1.5rem; border-radius: 2rem; border: none; font-weight: 600;
+            cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.5rem;
+            transition: all 0.2s;
+        }
         .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
         .btn-secondary { background: white; border: 1px solid var(--color-border); color: var(--color-text-main); }
         .btn-success { background: #10b981; color: white; }
         .btn-success:hover { background: #059669; }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
-        .result-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
-        .tab-btn { padding: 0.5rem 1.25rem; border-radius: 9999px; border: 1px solid var(--color-border); background: white; color: var(--color-text-muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm); font-family: 'Noto Sans KR', sans-serif; }
-        .tab-btn:hover { border-color: var(--color-primary); color: var(--color-primary); transform: translateY(-1px); }
-        .tab-btn.active { background: var(--primary-gradient); color: white; border-color: transparent; box-shadow: var(--shadow-md); transform: translateY(-1px); }
-        .table-wrapper { max-height: 70vh; overflow: auto; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+
+        /* Tab Styles */
+        .result-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px; /* Pill shape */
+            border: 1px solid var(--color-border);
+            background: white;
+            color: var(--color-text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        /* Table Styles */
+        .table-wrapper {
+            max-height: 70vh;
+            overflow: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+        }
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-        .data-table th { background: #eef2ff; padding: 1rem; text-align: center; font-weight: 700; border-bottom: 2px solid var(--color-border); border-right: 1px solid #f1f5f9; position: sticky; top: 0; z-index: 10; }
-        .data-table td { padding: 0.85rem; border-bottom: 1px solid var(--color-border); border-right: 1px solid #f1f5f9; text-align: center; }
+        .data-table th {
+            background: #eef2ff;
+            padding: 1rem; text-align: center; font-weight: 700;
+            border-bottom: 2px solid var(--color-border); border-right: 1px solid #f1f5f9;
+            position: sticky; top: 0; z-index: 10;
+        }
+        .data-table td {
+            padding: 0.85rem; border-bottom: 1px solid var(--color-border);
+            border-right: 1px solid #f1f5f9; text-align: center;
+        }
         .data-table tr:hover { background-color: #f8fafc; }
+
+        /* Stepper */
         .stepper-container { display: flex; justify-content: center; gap: 3rem; margin-bottom: 2rem; position: relative; }
-        .step-item { display: flex; flex-direction: column; align-items: center; z-index: 1; position: relative; }
-        .step-icon { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 4px solid white; }
+        .step-item { display: flex; flex-direction: column; align-items: center; z-index: 1; position: relative;}
+        .step-icon {
+            width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #64748b;
+            display: flex; align-items: center; justify-content: center; font-weight: 700; border: 4px solid white;
+        }
         .step-item.active .step-icon { background: var(--color-primary); color: white; }
         .step-item.completed .step-icon { background: #059669; color: white; }
-        .error-banner { background: #fef2f2; color: #b91c1c; padding: 1rem; border-radius: var(--radius-md); margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-        .cascade-row { display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
-        @media (max-width: 768px) { .cascade-row { grid-template-columns: 1fr; } }
-        .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; }
-        .badge-indigo { background: #eef2ff; color: #4f46e5; }
-        .badge-emerald { background: #ecfdf5; color: #059669; }
-        .view-toggle { display: inline-flex; background: #f1f5f9; border-radius: 9999px; padding: 3px; gap: 3px; }
-        .view-btn { padding: 0.5rem 1.2rem; border-radius: 9999px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; color: var(--color-text-muted); background: transparent; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; gap: 0.4rem; }
-        
-        /* Modified View Buttons Active States */
-        /* Changed Roster button active color to Indigo (#4f46e5) */
-        .view-btn.view-roster.active { background: #4f46e5; color: white; box-shadow: var(--shadow-sm); }
-        .view-btn.view-seating.active { background: #059669; color: white; box-shadow: var(--shadow-sm); }
-        
-        .hidden { display: none; }
 
-        /* File Info Bar */
-        .file-info-bar {
-            display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem;
-            background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md);
-        }
-        .file-info-bar .file-icon { color: #059669; font-size: 1.3rem; }
-        .file-info-bar .file-name { font-weight: 700; color: #065f46; font-size: 0.95rem; }
-        .file-info-bar .file-count { font-size: 0.85rem; color: var(--color-text-muted); }
-
-        /* Seating */
-        .seating-wrap { padding: 1rem 1.5rem; }
-        
-        /* Updated Header for Screen */
-        .seating-screen-header { 
-            display: flex; 
-            align-items: center; /* Center Vertically */
-            justify-content: center; /* Center Horizontally */
-            position: relative; 
-            width: 100%; 
-            margin-bottom: 12px; 
-            padding-bottom: 10px; 
-            border-bottom: 3px solid #1e1b4b; 
-            min-height: 100px;
-        }
-        .seating-screen-header h2 { 
-            text-align: center; 
-            font-size: 1.5rem; 
-            font-weight: 800; 
-            color: #1e1b4b; 
-            width: auto; /* Changed from 100% to auto */
-            display: inline-block;
-            margin: 0;
-        }
-        .seating-screen-header .ss-teacher { 
-            /* Removed absolute positioning */
-            margin-left: 12px;
-            font-size: 1.1rem; 
-            font-weight: 700; 
-            color: var(--color-text-main); 
-            display: inline-block;
-        }
-        .seating-screen-header .ss-logo { 
-            position: absolute; 
-            right: 0; 
-            top: 50%;
-            transform: translateY(-50%);
-            width: 96px; /* Increased by ~30% from 72px */
-            height: 96px; 
-            object-fit: contain; 
+        .error-banner {
+            background: #fef2f2; color: #b91c1c; padding: 1rem; border-radius: var(--radius-md);
+            margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;
         }
 
-        /* Updated Blackboard: fit content */
-        .blackboard { 
-            background: linear-gradient(135deg, #065f46, #064e3b); 
-            color: white; 
-            text-align: center; 
-            padding: 0.35rem 2rem; 
-            border-radius: var(--radius-md); 
-            font-weight: 700; 
-            font-size: 0.95rem; 
-            margin: 0 auto 1rem auto; /* Center and margin bottom */
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); 
-            letter-spacing: 0.3em; 
-            width: fit-content; /* Adjust width to content */
+        /* --- Seat Map Styles (Card/Desk Layout) --- */
+        .seat-wrapper { width: 100%; max-width: 1200px; margin: 1rem auto 0; padding: 1rem; background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); page-break-inside: avoid; }
+        .chalkboard { width: 40%; max-width: 300px; height: 36px; margin: 0 auto 2.5rem; background: #94a3b8; border: 3px solid #64748b; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #1e293b; letter-spacing: 0.2em; font-size: 1.1rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .seat-table { width: 100%; border-collapse: separate; border-spacing: 12px; table-layout: fixed; border: none; }
+        .seat-table td { position: relative; height: 100px; vertical-align: top; padding: 10px; border: none; }
+        .filled-seat {
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        
-        /* SCREEN GRID */
-        .seating-grid { 
-            display: grid; 
-            gap: 0.5rem; 
-            justify-content: center; 
-            margin: 0 auto; 
-            /* Screen: uses inline style for columns but defaults to minmax here conceptually */
+        .filled-seat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            border-color: #94a3b8;
         }
-        .seat-cell { border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 0.4rem 0.2rem; text-align: center; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: all 0.2s; }
-        .seat-cell:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
-        .seat-cell .s-num { font-size: 0.65rem; color: var(--color-text-muted); }
-        .seat-cell .s-id  { font-size: 0.72rem; color: var(--color-primary); font-weight: 600; }
-        .seat-cell .s-name{ font-size: 0.92rem; font-weight: 700; }
-        .seat-cell.empty { border: 2px dashed #e2e8f0; background: #fafafa; }
-        .seating-footer-screen { text-align: right; margin-top: 0.8rem; font-size: 0.85rem; color: var(--color-text-muted); }
+        .seat-number { position: absolute; top: 8px; left: 10px; font-size: 1.1rem; font-weight: 800; color: #94a3b8; }
+        .seat-student { text-align: center; margin-top: 1.5rem; }
+        .seat-student-name { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
+        .seat-student-id { font-size: 0.9rem; color: #64748b; margin-top: 2px; }
 
-        /* PRINT */
+        /* --- Print Styles Optimized for A4 Landscape --- */
         @media print {
             body { background: white; color: black; }
-            .hero-header, .stepper-container, .action-bar, .no-print, .mode-toggle, .view-toggle, .config-card-print-hide { display: none !important; }
+            .hero-header, .stepper-container, .card, .action-bar, .no-print, .result-header button, .grade-tabs { display: none !important; }
             .main-content { width: 100%; max-width: none; margin: 0; padding: 0; }
-            .card { box-shadow: none; border-radius: 0; padding: 0; margin: 0; }
+            .result-section { box-shadow: none; border-radius: 0; }
+            
             .result-tabs { display: none !important; }
+            .view-mode-toggles { display: none !important; }
+            
             @page { size: A4 landscape; margin: 5mm; }
+            
             .table-wrapper { max-height: none; overflow: visible; border: none; }
             .data-table { font-size: 9pt; width: 100%; border-collapse: collapse !important; }
-            .data-table th, .data-table td { border: 1px solid black !important; padding: 3px 4px !important; height: auto !important; line-height: 1.35 !important; white-space: nowrap !important; }
-            .data-table th { background-color: #eef2ff !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: static !important; }
-            .print-header-container { display: flex !important; justify-content: center; align-items: flex-end; position: relative; width: 100%; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 2px solid black; min-height: 70px; }
-            .print-title { text-align: center; font-size: 20pt; font-weight: bold; width: 100%; margin: 0 0 10px 0; z-index: 1; }
-            .print-logo { position: absolute; right: 0; bottom: -25px; width: 110px; height: 110px; object-fit: contain; z-index: 2; }
-            .print-footer { display: block !important; text-align: right; font-size: 10pt; margin-top: 4px; color: black; }
-            .print-teacher-line { display: block !important; text-align: right; font-size: 11pt; font-weight: bold; margin-top: -2px; margin-bottom: 4px; }
             
-            .seating-wrap { padding: 0; }
-            .seating-screen-header { display: none !important; }
-            .seating-footer-screen { display: none !important; }
+            .data-table th, .data-table td { 
+                border: 1px solid black !important; padding: 3px 4px !important; height: auto !important; line-height: 1.35 !important; white-space: nowrap !important; 
+            }
+            .data-table th { background-color: #eef2ff !important; color: black !important; -webkit-print-color-adjust: exact; position: static !important; }
             
-            /* Updated Print Header for Seating */
-            .seating-print-header { 
-                display: flex !important; 
-                justify-content: center; 
-                align-items: center; /* Centered */
-                position: relative; 
-                width: 100%; 
-                margin-bottom: 5px; 
-                padding-bottom: 5px; 
-                border-bottom: 2px solid black; 
-                min-height: 100px; 
+            /* Reduced paddings and margins to ensure fit on one page */
+            .print-header-container {
+                display: flex !important; flex-direction: column; justify-content: center; position: relative; width: 100%; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 2px solid black; min-height: 60px; 
             }
-            .seating-print-title { 
-                text-align: center; 
-                font-size: 24pt; 
-                font-weight: bold; 
-                width: auto; 
-                margin: 0; 
-                z-index: 1; 
-                display: inline-block;
-            }
-            /* New class for inline teacher in print */
-            .seating-print-teacher-inline {
-                display: inline-block !important;
-                font-size: 16pt;
-                font-weight: bold;
-                margin-left: 20px;
-            }
-            .seating-print-semester-info {
-                position: absolute;
-                left: 0;
-                bottom: 15px; /* Align near baseline */
-                font-size: 16pt; /* Same size as teacher */
-                font-weight: bold;
-                text-align: left;
-                z-index: 1;
-            }
+            .print-title { text-align: center; font-size: 18pt; font-weight: bold; width: 100%; margin: 0; z-index: 1; }
+            .print-subtitle { text-align: center; font-size: 12pt; font-weight: bold; width: 100%; margin-top: 2px; z-index: 1; }
             
-            .seating-print-logo { 
-                position: absolute; 
-                right: 0; 
-                top: 50%;
-                transform: translateY(-50%);
-                width: 116px; /* Reduced by ~20% from 145px */
-                height: 116px; 
-                object-fit: contain; 
-                z-index: 2; 
-                bottom: auto;
-            }
-            /* Hide the separate teacher line in seating print since we moved it up */
-            .seating-print-teacher { display: none !important; }
-            
-            .seating-print-footer { display: block !important; text-align: right; font-size: 10pt; margin-top: 4px; color: black; }
-            
-            /* MODIFIED: Blackboard for Print */
-            .blackboard { 
-                background: #065f46 !important; /* Changed to Green */
-                color: white !important;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                padding: 10px 3rem !important; /* Increased Size */
-                font-size: 14pt !important; 
-                margin-bottom: 15px !important; /* Reduced Spacing to save vertical space */
-                width: fit-content; 
-                margin-left: auto; 
-                margin-right: auto; 
+            .print-logo { position: absolute; right: 0; bottom: -15px; width: 80px; height: 80px; object-fit: contain; z-index: 2; }
+
+            .print-footer { display: block !important; text-align: right; font-size: 9pt; margin-top: 2px; color: black; }
+
+            /* Seat Map Print Enhancements - Height Decreased */
+            .seat-wrapper { box-shadow: none; margin: 0; padding: 0; }
+            .chalkboard { background: #e2e8f0 !important; color: black !important; -webkit-print-color-adjust: exact; border: 2px solid black !important; margin-bottom: 0.8rem; height: 28px !important; font-size: 1rem !important; }
+            .seat-table { border-spacing: 8px !important; } /* Reduced spacing */
+            .seat-table td { border: none !important; height: 80px !important; padding: 8px !important; } /* Reduced height and padding */
+            .filled-seat {
+                border: 2px solid #334155 !important;
                 border-radius: 10px !important;
+                box-shadow: 3px 3px 0px 0px #cbd5e1 !important; /* Slightly smaller shadow */
+                background: white !important;
+                -webkit-print-color-adjust: exact;
             }
-            
-            /* GRID OVERRIDE FOR PRINT: Use 1fr to expand */
-            .seating-grid { 
-                gap: 4px !important; /* Reduced gap */
-                display: grid !important;
-                grid-template-columns: repeat(var(--seating-cols, 6), 1fr) !important;
-                width: 100% !important;
-            }
-            
-            /* MODIFIED: Seat Cell for Print */
-            .seat-cell { 
-                border: 1.5px solid #333 !important; 
-                break-inside: avoid; 
-                padding: 4px 2px !important; 
-                min-height: 90px !important; /* Reduced Height to fit page */
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                align-items: center !important;
-            }
-            .seat-cell .s-num { font-size: 10pt; margin-bottom: 2px; } /* Slightly reduced font */
-            .seat-cell .s-id { font-size: 10pt; margin-bottom: 2px; } /* Slightly reduced font */
-            .seat-cell .s-name { font-size: 17pt; font-weight: bold; } /* Slightly reduced font */
+            .seat-number { top: 6px !important; left: 8px !important; font-size: 1rem !important; color: #64748b !important; }
+            .seat-student { margin-top: 1rem !important; }
+            .seat-student-name { font-size: 1.25rem !important; }
+            .seat-student-id { font-size: 0.85rem !important; }
         }
         .print-header-container { display: none; }
         .print-footer { display: none; }
-        .print-teacher-line { display: none; }
-        .seating-print-header { display: none; }
-        .seating-print-teacher { display: none; }
-        .seating-print-footer { display: none; }
-        .seating-print-semester-info { display: none; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useCallback, useRef, useMemo, StrictMode, useEffect } = React;
+        const { useState, useCallback, useRef, useEffect, StrictMode } = React;
 
-        /* ======= Shared Utility ======= */
-        const findHeaderRowIndex = (rows) => {
-            for (let i = 0; i < Math.min(rows.length, 15); i++) {
-                const vals = (Array.isArray(rows[i]) ? rows[i] : Object.values(rows[i] || {})).map(v => String(v || '').trim());
-                if (vals.includes('학번') && vals.includes('이름')) return i;
-            }
-            return 0;
-        };
-
-        const parseFile = (file, onSuccess, onError) => {
-            const ext = file.name.split('.').pop().toLowerCase();
-            const reader = new FileReader();
-            const processRows = (rawJson) => {
-                const cleaned = rawJson.map(row => {
-                    const n = {};
-                    Object.keys(row).forEach(k => { const ck = k.trim(); if (ck) n[ck] = row[k]; });
-                    return n;
-                });
-                const keys = Object.keys(cleaned[0] || {});
-                if (!keys.includes('학번') || !keys.includes('이름')) { onError("필수 컬럼(학번, 이름)을 찾을 수 없습니다."); return; }
-                onSuccess(cleaned);
-            };
-            if (['xlsx', 'xls'].includes(ext)) {
-                reader.onload = (e) => {
-                    try {
-                        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                        const ws = wb.Sheets[wb.SheetNames[0]];
-                        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                        const hIdx = findHeaderRowIndex(raw);
-                        const headers = raw[hIdx]?.map(h => String(h || '').trim());
-                        if (!headers || !headers.includes('학번')) throw new Error("'학번' 헤더를 찾을 수 없습니다.");
-                        const jd = raw.slice(hIdx + 1).map(row => { const o = {}; headers.forEach((h, i) => { if (h) o[h] = row[i] !== undefined ? row[i] : ''; }); return o; });
-                        processRows(jd);
-                    } catch (err) { onError(`엑셀 파싱 오류: ${err.message}`); }
-                };
-                reader.readAsArrayBuffer(file);
-            } else if (ext === 'csv') {
-                reader.onload = (e) => {
-                    Papa.parse(e.target.result, { header: false, skipEmptyLines: true, complete: (res) => {
-                        const hIdx = findHeaderRowIndex(res.data);
-                        const headers = res.data[hIdx]?.map(h => String(h).trim());
-                        if (headers && headers.includes('학번')) {
-                            const jd = res.data.slice(hIdx + 1).map(row => { const o = {}; headers.forEach((h, i) => { if (h) o[h] = row[i]; }); return o; });
-                            processRows(jd);
-                        } else { onError("CSV에서 '학번' 헤더를 찾을 수 없습니다."); }
-                    }, error: (err) => onError(err.message) });
-                };
-                reader.readAsText(file);
-            } else { onError("지원하지 않는 파일 형식입니다."); }
-        };
-
-
-        /* ====================================================
-         * MODE A — 코드 변환
-         * rawData를 prop으로 받음 (업로드 없음)
-         * ==================================================== */
-        const CodeConvertMode = ({ rawData, academicYear, semester, schoolLogo }) => {
-            const [displayView, setDisplayView] = useState({ type: 'individual', key: 'all' });
-
-            const transformData = useCallback((data) => {
-                const baseColumns = ['순번', '학번', '이름'];
-                if (!data || !data.length) return [];
-                const headers = Object.keys(data[0]);
-                const targetColumns = headers.filter(c => !baseColumns.includes(c));
-                const codeHeaderPattern = /^([A-Ja-j]|Ca|Cb)$/;
-                const isCodeAsHeader = targetColumns.filter(c => codeHeaderPattern.test(c.trim())).length > (targetColumns.length / 2);
-                const map = new Map();
-                data.forEach(student => {
-                    const sid = student['학번'] ? String(student['학번']).trim() : '';
-                    if (!sid) return;
-                    if (!map.has(sid)) map.set(sid, { '순번': student['순번'], '학번': sid, '이름': student['이름'] || '' });
-                    const rec = map.get(sid);
-                    targetColumns.forEach(col => {
-                        const cv = student[col]; if (!cv || !String(cv).trim()) return;
-                        const cs = String(cv).trim();
-                        let code, subj;
-                        if (isCodeAsHeader) { code = col.trim().toUpperCase(); subj = cs; }
-                        else {
-                            subj = col; code = cs.toUpperCase();
-                            if (academicYear === '2025' && sid.startsWith('2') && (cs === 'Ca' || cs === 'Cb') && subj.includes('일본어')) {
-                                subj = `${subj}(${cs})`; code = 'C';
-                            }
-                        }
-                        if (code && subj) {
-                            if (rec[code]) { if (!rec[code].includes(subj)) rec[code] = `${rec[code]}, ${subj}`; }
-                            else rec[code] = subj;
-                        }
-                    });
-                });
-                return Array.from(map.values()).sort((a, b) => parseInt(a['학번'], 10) - parseInt(b['학번'], 10));
-            }, [academicYear]);
-
-            const transformedData = useMemo(() => transformData(rawData), [rawData, transformData]);
-
-            const classData = useMemo(() => {
-                const g = new Map();
-                transformedData.forEach(r => {
-                    const sid = String(r['학번'] || '');
-                    if (sid.length >= 3) { const cn = `${sid[0]}-${parseInt(sid.substring(1, 3), 10)}`; if (!g.has(cn)) g.set(cn, []); g.get(cn).push(r); }
-                });
-                return new Map([...g.entries()].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })));
-            }, [transformedData]);
-
-            const getDisplayContent = () => {
-                if (!transformedData.length) return null;
-                if (displayView.type === 'individual') {
-                    const g = transformedData[0]?.['학번']?.[0] || '1';
-                    return { title: `${academicYear}학년도 ${semester} 선택과목 현황 (전체)`, data: transformedData, grade: g };
-                }
-                if (displayView.type === 'class') {
-                    const d = classData.get(displayView.key) || [];
-                    return { title: `${academicYear}학년도 ${semester} ${displayView.key}반 선택과목 현황`, data: d, grade: displayView.key[0] };
-                }
-                return null;
-            };
-            const dc = getDisplayContent();
-
-            const getColumns = () => {
-                if (!dc) return [];
-                const b = ['학번', '이름'], g2 = ['A','B','C','D','E'], g3 = ['A','B','C','D','E','F','G','H','I','J'];
-                if (dc.grade === '2') return [...b, ...g2];
-                if (dc.grade === '3') return [...b, ...g3];
-                return dc.data.some(r => ['F','G','H','I','J'].some(c => r[c])) ? [...b, ...g3] : [...b, ...g2];
-            };
-            const columns = getColumns();
-
-            const handleDownloadCSV = () => {
-                if (!dc) return;
-                const cd = dc.data.map(r => { const o = {}; columns.forEach(c => o[c] = r[c] || ''); return o; });
-                const csv = Papa.unparse({ fields: columns, data: cd });
-                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-                const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-                a.download = `${dc.title}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            };
-
-            if (!dc) return null;
-
-            return (
-                <div>
-                    <div className="no-print" style={{ display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap', marginBottom:'1rem' }}>
-                        <h2 style={{ fontWeight:800, fontSize:'1.3rem' }}>변환 결과</h2>
-                        <span className="badge badge-indigo">총 {dc.data.length}명</span>
-                        <div style={{flex:1}}></div>
-                        <div className="result-tabs">
-                            <button className={`tab-btn ${displayView.type === 'individual' ? 'active' : ''}`} onClick={() => setDisplayView({ type:'individual', key:'all' })}>전체</button>
-                            {Array.from(classData.keys()).map(cls => (
-                                <button key={cls} className={`tab-btn ${displayView.type === 'class' && displayView.key === cls ? 'active' : ''}`} onClick={() => setDisplayView({ type:'class', key:cls })}>{cls}반</button>
-                            ))}
-                        </div>
-                        <button className="btn btn-success" onClick={handleDownloadCSV}><i className="ph ph-file-csv"></i> 엑셀 다운로드</button>
-                        <button className="btn btn-primary" onClick={() => window.print()}><i className="ph ph-printer"></i> 인쇄</button>
-                    </div>
-                    <div className="print-header-container">
-                        <h1 className="print-title">{dc.title}</h1>
-                        {schoolLogo && <img src={schoolLogo} alt="Logo" className="print-logo" />}
-                    </div>
-                    <div className="table-wrapper">
-                        <table className="data-table">
-                            <thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead>
-                            <tbody>{dc.data.map((r, i) => <tr key={i}>{columns.map(c => <td key={c}>{r[c] || ''}</td>)}</tr>)}</tbody>
-                        </table>
-                    </div>
-                    <div className="print-footer">출력일: {new Date().toLocaleDateString()}</div>
-                </div>
-            );
-        };
-
-
-        /* ====================================================
-         * MODE B — 명렬표 / 좌석표
-         * rawData를 prop으로 받음 (업로드 없음)
-         * ==================================================== */
-        const RosterMode = ({ rawData, academicYear, semester, schoolLogo }) => {
-            const [selectedSubject, setSelectedSubject] = useState('');
-            const [selectedCode, setSelectedCode] = useState('');
-            const [teacherName, setTeacherName] = useState('');
-            const [filteredStudents, setFilteredStudents] = useState([]);
-            const [seatingStudents, setSeatingStudents] = useState([]); // 좌석 배정용 상태 (랜덤 가능)
-            const [viewMode, setViewMode] = useState('roster');
-            const [seatingCols, setSeatingCols] = useState(6);
-
-            const subjectCodeMap = useMemo(() => {
-                const keys = Object.keys(rawData[0] || {});
-                const subjects = keys.filter(k => !['순번', '학번', '이름'].includes(k));
-                const scMap = {};
-                subjects.forEach(subj => {
-                    const codes = new Set();
-                    rawData.forEach(row => { const v = row[subj]; if (v && String(v).trim()) codes.add(String(v).trim().toUpperCase()); });
-                    if (codes.size > 0) scMap[subj] = [...codes].sort();
-                });
-                return scMap;
-            }, [rawData]);
-
-            // 필터가 변경될 때마다 seatingStudents를 초기화 (번호순)
-            useEffect(() => {
-                setSeatingStudents([...filteredStudents]);
-            }, [filteredStudents]);
-
-            const handleSubjectChange = (subj) => { 
-                setSelectedSubject(subj); 
-                setSelectedCode(''); 
-                setFilteredStudents([]); 
-                setSeatingStudents([]); 
-            };
-            
-            const handleCodeChange = (code) => {
-                setSelectedCode(code);
-                if (!code || !selectedSubject || !rawData) { 
-                    setFilteredStudents([]); 
-                    setSeatingStudents([]);
-                    return; 
-                }
-                const students = rawData
-                    .filter(r => { const v = r[selectedSubject]; return v && String(v).trim().toUpperCase() === code; })
-                    .map(r => ({ 학번: String(r['학번'] || '').trim(), 이름: String(r['이름'] || '').trim() }))
-                    .sort((a, b) => parseInt(a.학번, 10) - parseInt(b.학번, 10));
-                students.forEach((s, i) => s.순번 = i + 1);
-                
-                setFilteredStudents(students);
-                // useEffect will handle setSeatingStudents
-            };
-
-            const handleShuffle = () => {
-                const shuffled = [...seatingStudents].sort(() => Math.random() - 0.5);
-                setSeatingStudents(shuffled);
-            };
-
-            const availableCodes = selectedSubject ? (subjectCodeMap[selectedSubject] || []) : [];
-            const className = selectedSubject && selectedCode ? `${selectedSubject} ${selectedCode}` : '';
-
-            const seatingRows = useMemo(() => {
-                // seatingStudents 사용
-                const rows = [], total = seatingStudents.length, cols = seatingCols;
-                const numRows = Math.ceil(total / cols);
-                for (let r = 0; r < numRows; r++) {
-                    const row = [];
-                    for (let c = 0; c < cols; c++) {
-                        const idx = r % 2 === 0 ? r * cols + c : r * cols + (cols - 1 - c);
-                        row.push(idx < total ? seatingStudents[idx] : null);
-                    }
-                    rows.push(row);
-                }
-                return rows;
-            }, [seatingStudents, seatingCols]);
-
-            const handleDownloadCSV = () => {
-                if (!filteredStudents.length) return;
-                const csv = Papa.unparse({ fields: ['순번', '학번', '이름'], data: filteredStudents });
-                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-                const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-                a.download = `${className} 명렬표.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            };
-
-            const printTitle = `${academicYear}학년도 ${semester} ${className} ${viewMode === 'roster' ? '명렬표' : '좌석표'}`;
-
-            return (
-                <>
-                    {/* Selection Card */}
-                    <div className="card no-print">
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1.5rem' }}>
-                            <i className="ph ph-funnel-simple" style={{ fontSize:'1.4rem', color:'var(--color-primary)' }}></i>
-                            <h3 style={{ fontWeight:700, fontSize:'1.1rem' }}>학급 선택</h3>
-                            {className && <span className="badge badge-emerald"><i className="ph ph-check-circle"></i> {className}</span>}
-                            {className && <span className="badge badge-indigo">{filteredStudents.length}명</span>}
-                        </div>
-                        <div className="cascade-row">
-                            <div className="form-group">
-                                <label>교과목</label>
-                                <select className="form-control" value={selectedSubject} onChange={e => handleSubjectChange(e.target.value)}>
-                                    <option value="">— 교과목 선택 —</option>
-                                    {Object.keys(subjectCodeMap).map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>코드</label>
-                                <select className="form-control" value={selectedCode} onChange={e => handleCodeChange(e.target.value)} disabled={!selectedSubject}>
-                                    <option value="">— 코드 —</option>
-                                    {availableCodes.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>지도교사</label>
-                                <input type="text" className="form-control" value={teacherName} onChange={e => setTeacherName(e.target.value)} placeholder="교사 이름 입력" />
-                            </div>
-                        </div>
-
-                        {filteredStudents.length > 0 && (
-                            <div style={{ display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap', justifyContent:'space-between' }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-                                    <div className="view-toggle">
-                                        <button className={`view-btn view-roster ${viewMode === 'roster' ? 'active' : ''}`} onClick={() => setViewMode('roster')}>
-                                            <i className="ph ph-list-numbers"></i> 명렬표
-                                        </button>
-                                        <button className={`view-btn view-seating ${viewMode === 'seating' ? 'active' : ''}`} onClick={() => setViewMode('seating')}>
-                                            <i className="ph ph-grid-four"></i> 좌석표
-                                        </button>
-                                    </div>
-                                    {viewMode === 'seating' && (
-                                        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
-                                            <label style={{ fontSize:'0.85rem', color:'var(--color-text-muted)', fontWeight:600 }}>열 수:</label>
-                                            <select className="form-control" style={{ width:'auto', padding:'0.4rem 0.6rem' }} value={seatingCols} onChange={e => setSeatingCols(Number(e.target.value))}>
-                                                {[4,5,6,7,8].map(n => <option key={n} value={n}>{n}열</option>)}
-                                            </select>
-                                        </div>
-                                    )}
-                                </div>
-                                <div style={{ display:'flex', gap:'0.5rem' }}>
-                                    {viewMode === 'seating' && (
-                                        <>
-                                            <button className="btn btn-secondary" onClick={handleShuffle}><i className="ph ph-shuffle"></i> 랜덤 배정</button>
-                                            <button className="btn btn-secondary" onClick={() => setSeatingStudents([...filteredStudents])}><i className="ph ph-sort-ascending"></i> 번호순</button>
-                                        </>
-                                    )}
-                                    <button className="btn btn-success" onClick={handleDownloadCSV}><i className="ph ph-file-csv"></i> CSV 다운로드</button>
-                                    <button className="btn btn-primary" onClick={() => window.print()}><i className="ph ph-printer"></i> 인쇄</button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 명렬표 */}
-                    {filteredStudents.length > 0 && viewMode === 'roster' && (
-                        <div className="card">
-                            <div className="print-header-container">
-                                <h1 className="print-title">{printTitle}</h1>
-                                {schoolLogo && <img src={schoolLogo} alt="Logo" className="print-logo" />}
-                            </div>
-                            <div className="print-teacher-line">
-                                {teacherName ? `지도교사: ${teacherName}    인원: ${filteredStudents.length}명` : `인원: ${filteredStudents.length}명`}
-                            </div>
-                            <div className="table-wrapper">
-                                <table className="data-table">
-                                    <thead><tr><th style={{width:'60px'}}>순번</th><th style={{width:'100px'}}>학번</th><th>이름</th><th style={{width:'30%'}}>비고</th></tr></thead>
-                                    <tbody>{filteredStudents.map((s, i) => <tr key={i}><td>{s.순번}</td><td>{s.학번}</td><td>{s.이름}</td><td></td></tr>)}</tbody>
-                                </table>
-                            </div>
-                            <div className="print-footer">출력일: {new Date().toLocaleDateString()}</div>
-                        </div>
-                    )}
-
-                    {/* 좌석표 */}
-                    {filteredStudents.length > 0 && viewMode === 'seating' && (
-                        <div className="card">
-                            <div className="seating-wrap">
-                                <div className="seating-print-header">
-                                    <div className="seating-print-semester-info">{academicYear}학년도 {semester}</div>
-                                    <div style={{display:'flex', alignItems:'center', justifyContent:'center'}}>
-                                        <h1 className="seating-print-title">{className} 좌석표</h1>
-                                        {teacherName && <span className="seating-print-teacher-inline">지도교사: {teacherName}</span>}
-                                    </div>
-                                    {schoolLogo && <img src={schoolLogo} alt="Logo" className="seating-print-logo" />}
-                                </div>
-                                {/* Old separate line hidden in CSS, using inline teacher now for print too */}
-                                <div className="seating-print-teacher">
-                                    {teacherName ? `지도교사: ${teacherName}    인원: ${filteredStudents.length}명` : `인원: ${filteredStudents.length}명`}
-                                </div>
-
-                                <div className="seating-screen-header no-print">
-                                    <div style={{textAlign:'center'}}>
-                                        <h2>{className} 좌석표</h2>
-                                        {teacherName && <span className="ss-teacher">지도교사: {teacherName}</span>}
-                                    </div>
-                                    {schoolLogo && <img src={schoolLogo} alt="Logo" className="ss-logo" />}
-                                </div>
-
-                                <div className="blackboard">탁 자</div>
-
-                                {/* Use style variable for columns to allow CSS override in print */}
-                                <div className="seating-grid" style={{ '--seating-cols': seatingCols, gridTemplateColumns: `repeat(${seatingCols}, minmax(80px, 120px))` }}>
-                                    {seatingRows.map((row, ri) =>
-                                        row.map((student, ci) => (
-                                            <div key={`${ri}-${ci}`} className={`seat-cell ${!student ? 'empty' : ''}`}>
-                                                {student && (<><div className="s-num">{student.순번}번</div><div className="s-id">{student.학번}</div><div className="s-name">{student.이름}</div></>)}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-
-                                <div className="seating-footer-screen no-print" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                                    <span>{filteredStudents.length}명 · 출력일: {new Date().toLocaleDateString()}</span>
-                                    <button className="btn btn-primary" onClick={() => window.print()} style={{padding:'0.5rem 1.2rem', fontSize:'0.9rem'}}>
-                                        <i className="ph ph-printer"></i> 좌석표 인쇄
-                                    </button>
-                                </div>
-                                <div className="seating-print-footer">출력일: {new Date().toLocaleDateString()}</div>
-                            </div>
-                        </div>
-                    )}
-
-                    {filteredStudents.length === 0 && selectedSubject && selectedCode && (
-                        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-muted)' }}>
-                            <i className="ph ph-magnifying-glass" style={{ fontSize:'3rem', marginBottom:'1rem', display:'block' }}></i>
-                            <div style={{ fontWeight:600 }}>해당 조건에 맞는 학생이 없습니다.</div>
-                        </div>
-                    )}
-                </>
-            );
-        };
-
-
-        /* ====================================================
-         * MAIN APP — 파일 업로드를 여기서 1회만 수행
-         * ==================================================== */
         const App = () => {
-            const [appMode, setAppMode] = useState('convert');
-            const [academicYear, setAcademicYear] = useState("2026");
+            const [step, setStep] = useState(1);
+            const [academicYear, setAcademicYear] = useState(new Date().getFullYear().toString());
             const [semester, setSemester] = useState("1학기");
-            const [schoolLogo, setSchoolLogo] = useState(null);
-
-            // 공유 데이터
-            const [uploadedFile, setUploadedFile] = useState(null);
-            const [rawData, setRawData] = useState(null);
+            const [uploadedFiles, setUploadedFiles] = useState([]);
+            
+            // 학년별 데이터 관리
+            const [transformedDataByGrade, setTransformedDataByGrade] = useState({});
+            const [classDataByGrade, setClassDataByGrade] = useState({});
+            const [activeGrade, setActiveGrade] = useState('2');
+            
+            // 뷰 상태
+            const [displayView, setDisplayView] = useState({ type: 'individual', key: 'all', viewMode: 'table' });
+            
+            // 선택과목 좌석표 설정 및 랜덤 배치 데이터 상태 관리 (기본 5열 설정)
+            const [electiveConfig, setElectiveConfig] = useState({ 
+                code: '', 
+                subject: '', 
+                teacher: '', 
+                cols: 5, 
+                generated: false, 
+                randomData: [] 
+            });
+            
             const [isLoading, setIsLoading] = useState(false);
             const [error, setError] = useState(null);
+            const [schoolLogo, setSchoolLogo] = useState(null);
             const [isDragging, setIsDragging] = useState(false);
 
             const logoInputRef = useRef(null);
             const fileInputRef = useRef(null);
 
+            // 학년 탭 변경 시 뷰 초기화 (기본 5열 설정)
+            useEffect(() => {
+                setDisplayView({ type: 'individual', key: 'all', viewMode: 'table' });
+                setElectiveConfig({ code: '', subject: '', teacher: '', cols: 5, generated: false, randomData: [] });
+            }, [activeGrade]);
+
             const handleLogoChange = (e) => {
-                if (e.target.files?.[0]) {
+                if (e.target.files && e.target.files[0]) {
                     const reader = new FileReader();
                     reader.onload = (ev) => setSchoolLogo(ev.target.result);
                     reader.readAsDataURL(e.target.files[0]);
                 }
-                e.target.value = '';
+                e.target.value = ''; 
             };
 
             const handleFileSelect = (e) => {
-                if (e.target.files?.length) { setUploadedFile(e.target.files[0]); setError(null); setRawData(null); }
-                e.target.value = '';
+                if (e.target.files && e.target.files.length > 0) {
+                    setUploadedFiles(Array.from(e.target.files));
+                    setError(null);
+                }
+                e.target.value = ''; 
             };
-            const onDragOver = useCallback(e => { e.preventDefault(); setIsDragging(true); }, []);
-            const onDragLeave = useCallback(e => { e.preventDefault(); setIsDragging(false); }, []);
-            const onDrop = useCallback(e => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files?.length) { setUploadedFile(e.dataTransfer.files[0]); setError(null); setRawData(null); } }, []);
 
-            const handleProcess = useCallback(() => {
-                if (!uploadedFile) { setError("파일을 선택해주세요."); return; }
+            const onDragOver = useCallback((e) => {
+                e.preventDefault();
+                setIsDragging(true);
+            }, []);
+
+            const onDragLeave = useCallback((e) => {
+                e.preventDefault();
+                setIsDragging(false);
+            }, []);
+
+            const onDrop = useCallback((e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    setUploadedFiles(Array.from(e.dataTransfer.files));
+                    setError(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                }
+            }, []);
+
+            // --- 데이터 변환 로직 (원본 유지) ---
+            const transformData = useCallback((data) => {
+                const baseColumns = ['순번', '학번', '이름'];
+                if (!data || data.length === 0) return [];
+                
+                const sampleRow = data[0];
+                const headers = Object.keys(sampleRow);
+                const targetColumns = headers.filter(col => !baseColumns.includes(col));
+                
+                const codeHeaderPattern = /^([A-Ja-j]|Ca|Cb)$/; 
+                const codeFormatMatches = targetColumns.filter(col => codeHeaderPattern.test(col.trim())).length;
+                const isCodeAsHeader = codeFormatMatches > (targetColumns.length / 2);
+
+                const pivotedDataMap = new Map();
+                
+                data.forEach(student => {
+                    const studentId = student['학번'] ? String(student['학번']).trim() : '';
+                    if (!studentId) return; 
+                    
+                    if (!pivotedDataMap.has(studentId)) {
+                        pivotedDataMap.set(studentId, {
+                            '순번': student['순번'],
+                            '학번': studentId,
+                            '이름': student['이름'] || '',
+                        });
+                    }
+                    const record = pivotedDataMap.get(studentId);
+
+                    targetColumns.forEach(col => {
+                        const cellValue = student[col];
+                        if (!cellValue || String(cellValue).trim() === '') return;
+
+                        let code, subjectName;
+                        const cellStr = String(cellValue).trim();
+
+                        if (isCodeAsHeader) {
+                            code = col.trim().toUpperCase(); 
+                            subjectName = cellStr;
+                        } else {
+                            subjectName = col;
+                            code = cellStr.toUpperCase(); 
+                            
+                            if (
+                                academicYear === '2025' &&
+                                studentId?.startsWith('2') &&
+                                (cellStr === 'Ca' || cellStr === 'Cb') &&
+                                subjectName.includes('일본어')
+                            ) {
+                                subjectName = `${subjectName}(${cellStr})`;
+                                code = 'C';
+                            }
+                        }
+
+                        if (code && subjectName) {
+                            if (record[code]) {
+                                if (!record[code].includes(subjectName)) {
+                                    record[code] = `${record[code]}, ${subjectName}`;
+                                }
+                            } else {
+                                record[code] = subjectName;
+                            }
+                        }
+                    });
+                });
+                
+                return Array.from(pivotedDataMap.values()).sort((a, b) => {
+                    return parseInt(a['학번'], 10) - parseInt(b['학번'], 10);
+                });
+            }, [academicYear]);
+
+            const groupDataByClass = (data) => {
+                const grouped = new Map();
+                data.forEach(row => {
+                    const studentId = row['학번'] ? String(row['학번']) : '';
+                    if (studentId.length >= 3) {
+                        const classPrefix = studentId.substring(0, 3);
+                        const className = `${classPrefix[0]}-${parseInt(classPrefix.substring(1), 10)}`;
+                        if (!grouped.has(className)) grouped.set(className, []);
+                        grouped.get(className)?.push(row);
+                    }
+                });
+                return new Map([...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })));
+            };
+
+            const findHeaderRowIndex = (rows) => {
+                for (let i = 0; i < Math.min(rows.length, 15); i++) {
+                    const row = rows[i];
+                    if (!row) continue;
+                    const values = Array.isArray(row) ? row : Object.values(row);
+                    const strValues = values.map(v => String(v || '').trim());
+                    if (strValues.includes('학번') && strValues.includes('이름')) return i;
+                }
+                return 0;
+            };
+
+            const parseFile = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    
+                    if (ext === 'csv') {
+                        reader.onload = (e) => {
+                            Papa.parse(e.target.result, {
+                                header: false, skipEmptyLines: true, encoding: 'utf-8-sig',
+                                complete: (res) => {
+                                    const hIdx = findHeaderRowIndex(res.data);
+                                    const headers = res.data[hIdx]?.map(h => String(h).trim());
+                                    if (headers && headers.includes('학번') && headers.includes('이름')) {
+                                        resolve(res.data.slice(hIdx + 1).map(row => {
+                                            const obj = {}; headers.forEach((h, idx) => { if(h) obj[h] = row[idx]; }); return obj;
+                                        }));
+                                    } else {
+                                        const reader2 = new FileReader();
+                                        reader2.onload = (e2) => {
+                                            Papa.parse(e2.target.result, {
+                                                header: false, skipEmptyLines: true, encoding: 'EUC-KR',
+                                                complete: (res2) => {
+                                                    const hIdx2 = findHeaderRowIndex(res2.data);
+                                                    const headers2 = res2.data[hIdx2]?.map(h => String(h).trim());
+                                                    if (headers2 && headers2.includes('학번')) {
+                                                        resolve(res2.data.slice(hIdx2 + 1).map(row => {
+                                                            const obj = {}; headers2.forEach((h, idx) => { if(h) obj[h] = row[idx]; }); return obj;
+                                                        }));
+                                                    } else reject(new Error("CSV 인코딩/헤더를 인식할 수 없습니다."));
+                                                }
+                                            });
+                                        };
+                                        reader2.readAsText(file, 'EUC-KR');
+                                    }
+                                },
+                                error: (err) => reject(new Error(err.message))
+                            });
+                        };
+                        reader.readAsText(file);
+                    } else if (['xlsx', 'xls'].includes(ext)) {
+                        reader.onload = (e) => {
+                            try {
+                                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                                const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+                                const hIdx = findHeaderRowIndex(rawRows);
+                                const headers = rawRows[hIdx]?.map(h => String(h || '').trim());
+                                if (!headers || !headers.includes('학번')) throw new Error("엑셀에서 '학번'을 찾을 수 없습니다.");
+                                resolve(rawRows.slice(hIdx + 1).map(row => {
+                                    const obj = {}; headers.forEach((h, idx) => { if(h) obj[h] = row[idx] !== undefined ? row[idx] : ''; }); return obj;
+                                }));
+                            } catch (err) { reject(new Error(`엑셀 오류: ${err.message}`)); }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        reject(new Error(`지원하지 않는 파일 형식: ${file.name}`));
+                    }
+                });
+            };
+
+            const handleProcess = async () => {
+                if (!uploadedFiles || uploadedFiles.length === 0) {
+                    setError("파일을 선택해주세요."); return;
+                }
                 setIsLoading(true); setError(null);
-                parseFile(uploadedFile,
-                    (cleaned) => { setRawData(cleaned); setIsLoading(false); },
-                    (msg) => { setError(msg); setIsLoading(false); }
-                );
-            }, [uploadedFile]);
 
-            const handleReset = () => { setUploadedFile(null); setRawData(null); setError(null); };
+                try {
+                    let allRawData = [];
+                    for (const file of uploadedFiles) {
+                        const data = await parseFile(file);
+                        allRawData = allRawData.concat(data);
+                    }
+
+                    if (allRawData.length === 0) throw new Error("추출된 데이터가 없습니다.");
+
+                    const grade2Data = [];
+                    const grade3Data = [];
+
+                    allRawData.forEach(row => {
+                        const newRow = {};
+                        Object.keys(row).forEach(key => {
+                            const cleanKey = key.trim();
+                            if (cleanKey) newRow[cleanKey] = row[key];
+                        });
+                        
+                        const stId = String(newRow['학번'] || '').trim();
+                        if (stId.startsWith('2')) grade2Data.push(newRow);
+                        else if (stId.startsWith('3')) grade3Data.push(newRow);
+                    });
+
+                    if (grade2Data.length === 0 && grade3Data.length === 0) {
+                        throw new Error("2학년 또는 3학년 데이터를 찾을 수 없습니다. 학번을 확인해주세요.");
+                    }
+
+                    const t2 = transformData(grade2Data);
+                    const t3 = transformData(grade3Data);
+
+                    setTransformedDataByGrade({ '2': t2, '3': t3 });
+                    setClassDataByGrade({ '2': groupDataByClass(t2), '3': groupDataByClass(t3) });
+
+                    if (t2.length > 0) setActiveGrade('2');
+                    else if (t3.length > 0) setActiveGrade('3');
+
+                    setStep(2);
+                } catch (e) {
+                    setError(`처리 오류: ${e.message}`);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleReset = () => {
+                setStep(1); setUploadedFiles([]); 
+                setTransformedDataByGrade({}); setClassDataByGrade({});
+                setActiveGrade('2'); setDisplayView({ type: 'individual', key: 'all', viewMode: 'table' });
+                setElectiveConfig({ code: '', subject: '', teacher: '', cols: 5, generated: false, randomData: [] });
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            };
+
+            // 선택과목 좌석표 생성 및 셔플 함수
+            const handleGenerateSeatMap = (isRandom) => {
+                const currentData = transformedDataByGrade[activeGrade] || [];
+                let dataToUse = currentData.filter(row => row[electiveConfig.code] && row[electiveConfig.code].includes(electiveConfig.subject));
+                
+                if (isRandom) {
+                    // Fisher-Yates shuffle
+                    let shuffled = [...dataToUse];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    dataToUse = shuffled;
+                } else {
+                    // 원래 학번 오름차순
+                    dataToUse = [...dataToUse].sort((a, b) => parseInt(a['학번'], 10) - parseInt(b['학번'], 10));
+                }
+
+                setElectiveConfig({
+                    ...electiveConfig,
+                    generated: true,
+                    randomData: dataToUse
+                });
+            };
+
+            // --- 렌더링 콘텐츠 결정 ---
+            const getDisplayContent = () => {
+                const currentData = transformedDataByGrade[activeGrade];
+                const currentClassMap = classDataByGrade[activeGrade];
+
+                if (!currentData || currentData.length === 0) return null;
+
+                if (displayView.type === 'individual') {
+                    return { 
+                        title: `${academicYear}학년도 ${semester} ${activeGrade}학년 선택과목 현황 (전체)`, 
+                        subtitle: '',
+                        data: currentData, grade: activeGrade 
+                    };
+                }
+                if (displayView.type === 'class' && currentClassMap) {
+                    const data = currentClassMap.get(displayView.key) || [];
+                    let titleSuffix = '선택과목 현황';
+                    if (displayView.viewMode === 'seat5') titleSuffix = '좌석표 (5열)';
+                    if (displayView.viewMode === 'seat6') titleSuffix = '좌석표 (6열)';
+                    
+                    return { 
+                        title: `${academicYear}학년도 ${semester} ${displayView.key}반 ${titleSuffix}`, 
+                        subtitle: '',
+                        data, grade: activeGrade 
+                    };
+                }
+                if (displayView.type === 'elective') {
+                    if (!electiveConfig.generated || !electiveConfig.code || !electiveConfig.subject) {
+                        return { title: '선택과목 좌석표 설정 중...', subtitle: '', data: [], grade: activeGrade };
+                    }
+                    const data = electiveConfig.randomData;
+                    return {
+                        title: `${academicYear}학년도 ${semester} ${activeGrade}학년 [${electiveConfig.subject} (${electiveConfig.code})] 좌석표`,
+                        subtitle: electiveConfig.teacher ? `지도교사 : ${electiveConfig.teacher}` : '',
+                        data, grade: activeGrade
+                    }
+                }
+                return null;
+            };
+
+            const displayedContent = getDisplayContent();
+
+            const getColumns = () => {
+                if (!displayedContent) return [];
+                const base = ['학번', '이름'];
+                const grade2Codes = ['A', 'B', 'C', 'D', 'E'];
+                const grade3Codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+                return activeGrade === '3' ? [...base, ...grade3Codes] : [...base, ...grade2Codes];
+            };
+            const columns = getColumns();
+
+            // 선택과목 드롭다운을 위한 데이터 추출
+            const currentGradeData = transformedDataByGrade[activeGrade] || [];
+            const availableCodes = activeGrade === '3' ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] : ['A', 'B', 'C', 'D', 'E'];
+            
+            // 전체 과목 및 해당 과목이 속한 코드 매핑 추출
+            const getSubjectCodeMap = () => {
+                const map = new Map();
+                if (!currentGradeData || currentGradeData.length === 0) return map;
+                currentGradeData.forEach(row => {
+                    availableCodes.forEach(code => {
+                        if (row[code]) {
+                            row[code].split(',').forEach(s => {
+                                const sub = s.trim();
+                                if (sub) {
+                                    if (!map.has(sub)) map.set(sub, new Set());
+                                    map.get(sub).add(code);
+                                }
+                            });
+                        }
+                    });
+                });
+                return map;
+            };
+            const subjectCodeMap = getSubjectCodeMap();
+            const allAvailableSubjects = Array.from(subjectCodeMap.keys()).sort();
+            
+            const validCodesForSubject = electiveConfig.subject 
+                ? Array.from(subjectCodeMap.get(electiveConfig.subject) || []).sort() 
+                : availableCodes;
+
+            // 과목 변경 핸들러 (과목 선택 시 코드가 1개면 자동 선택)
+            const handleSubjectChange = (e) => {
+                const subject = e.target.value;
+                let code = electiveConfig.code;
+                if (subject) {
+                    const codes = Array.from(subjectCodeMap.get(subject) || []);
+                    if (codes.length === 1) {
+                        code = codes[0]; 
+                    } else if (!codes.includes(code)) {
+                        code = ''; 
+                    }
+                }
+                setElectiveConfig({ ...electiveConfig, subject, code, generated: false });
+            };
+
+            // 코드 변경 핸들러
+            const handleCodeChange = (e) => {
+                setElectiveConfig({ ...electiveConfig, code: e.target.value, generated: false });
+            };
+
+            // --- CSV 다운로드 (항상 표 데이터 기준) ---
+            const handleDownloadCSV = () => {
+                if (!displayedContent) return;
+                const { title, data } = displayedContent;
+                const csvData = data.map(row => {
+                    const rowData = {};
+                    columns.forEach(col => rowData[col] = row[col] || '');
+                    return rowData;
+                });
+                const csv = Papa.unparse({ fields: columns, data: csvData });
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.setAttribute("href", URL.createObjectURL(blob));
+                link.setAttribute("download", `${title}.csv`);
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            };
+
+            // --- 좌석표 렌더링 로직 (위에서 아래로 채우기) ---
+            const renderSeatMap = (data, cols) => {
+                if (!data || data.length === 0) return <div className="p-8 text-center text-gray-500">데이터가 없습니다.</div>;
+                
+                const total = data.length;
+                const rows = Math.ceil(total / cols);
+                const grid = Array.from({ length: rows }, () => Array(cols).fill(null));
+                
+                // 열을 우선하여 채움 (이미지 규칙: 좌측상단 -> 하단 -> 우측이동)
+                for (let c = 0; c < cols; c++) {
+                    for (let r = 0; r < rows; r++) {
+                        const studentIndex = (c * rows) + r;
+                        if (studentIndex < total) {
+                            grid[r][c] = {
+                                num: studentIndex + 1,
+                                student: data[studentIndex]
+                            };
+                        }
+                    }
+                }
+
+                return (
+                    <div className="seat-wrapper">
+                        <div className="chalkboard">교 탁</div>
+                        <table className="seat-table">
+                            <tbody>
+                                {grid.map((rowArr, rIdx) => (
+                                    <tr key={rIdx}>
+                                        {rowArr.map((cell, cIdx) => (
+                                            <td key={cIdx} className={cell ? 'filled-seat' : ''}>
+                                                {cell ? (
+                                                    <>
+                                                        <div className="seat-number">{cell.num}</div>
+                                                        <div className="seat-student">
+                                                            <div className="seat-student-name">{cell.student['이름']}</div>
+                                                            <div className="seat-student-id">{cell.student['학번']}</div>
+                                                        </div>
+                                                    </>
+                                                ) : null}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            };
 
             return (
                 <div className="app-container">
                     <header className="hero-header no-print">
                         <h1 className="hero-title">선택과목 코드 변환 시스템</h1>
-                        <p className="hero-subtitle">학년별, 학급별 선택과목 자동 변환 · 명렬표 · 좌석표</p>
-                        <div className="mode-toggle">
-                            <button className={`mode-btn mode-convert ${appMode === 'convert' ? 'active' : ''}`} onClick={() => setAppMode('convert')}>
-                                <i className="ph ph-table"></i> 코드 변환
-                            </button>
-                            <button className={`mode-btn mode-roster ${appMode === 'roster' ? 'active' : ''}`} onClick={() => setAppMode('roster')}>
-                                <i className="ph ph-users-three"></i> 명렬표 · 좌석표
-                            </button>
-                        </div>
+                        <p className="hero-subtitle">학년별, 학급별 선택과목 동시 변환 및 좌석표 생성</p>
                     </header>
 
                     <main className="main-content">
-                        {/* 공통 설정 카드 */}
-                        <div className="card no-print config-card-print-hide">
-                            <div className="config-grid">
-                                <div className="form-group">
-                                    <label>학년도</label>
-                                    <input type="number" className="form-control" value={academicYear} onChange={e => setAcademicYear(e.target.value)} />
-                                </div>
-                                <div className="form-group">
-                                    <label>학기</label>
-                                    <select className="form-control" value={semester} onChange={e => setSemester(e.target.value)}>
-                                        <option>1학기</option><option>2학기</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>학교 로고</label>
-                                    <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
-                                        {schoolLogo && (
-                                            <div style={{ width:40, height:40, border:'1px solid var(--color-border)', borderRadius:8, overflow:'hidden', flexShrink:0, background:'white' }}>
-                                                <img src={schoolLogo} alt="Preview" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-                                            </div>
-                                        )}
-                                        <button className="btn btn-secondary" style={{ flex:1, justifyContent:'center' }} onClick={() => logoInputRef.current?.click()}>
-                                            <i className="ph ph-image"></i> {schoolLogo ? "변경" : "등록"}
-                                        </button>
-                                    </div>
-                                </div>
+                        {/* Stepper */}
+                        <div className="stepper-container no-print">
+                            <div className={`step-item ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
+                                <div className="step-icon">{step > 1 ? <i className="ph ph-check"></i> : "1"}</div>
+                                <span className="step-label mt-2">파일 업로드</span>
                             </div>
-                            <input type="file" ref={logoInputRef} onChange={handleLogoChange} className="hidden" accept="image/*" />
+                            <div className="absolute top-4 w-40 border-t-2 border-gray-200 z-0"></div>
+                            <div className={`step-item ${step >= 2 ? 'active' : ''}`}>
+                                <div className="step-icon">2</div>
+                                <span className="step-label mt-2">결과 및 좌석표</span>
+                            </div>
                         </div>
 
-                        {/* 공통 파일 업로드 (데이터 없을 때만) */}
-                        {!rawData && (
-                            <div className="card no-print">
-                                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".csv,.xlsx,.xls" />
-                                <div className={`dropzone-area ${isDragging ? 'dragging' : ''}`}
-                                    onClick={() => fileInputRef.current?.click()} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
-                                    <i className={`ph ${uploadedFile ? 'ph-file-csv' : 'ph-upload-simple'}`} style={{ fontSize:'3rem', color: uploadedFile ? '#059669' : '#94a3b8', display:'block', marginBottom:8 }}></i>
-                                    <div style={{ fontWeight:700, fontSize:'1.1rem', color:'#334155' }}>{uploadedFile ? uploadedFile.name : "선택과목 파일 업로드"}</div>
-                                    <div style={{ fontSize:'0.9rem', color:'#94a3b8', marginTop:4 }}>{uploadedFile ? "파일이 준비되었습니다. 아래 버튼으로 불러오세요." : "클릭하거나 파일을 드래그하세요 (CSV / Excel)"}</div>
+                        {step === 1 && (
+                            <div className="card">
+                                <div className="config-grid">
+                                    <div className="form-group">
+                                        <label className="block text-sm font-medium mb-1">학년도</label>
+                                        <input type="number" className="form-control" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="block text-sm font-medium mb-1">학기</label>
+                                        <select className="form-control" value={semester} onChange={(e) => setSemester(e.target.value)}>
+                                            <option>1학기</option><option>2학기</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="block text-sm font-medium mb-1">학교 로고</label>
+                                        <div className="flex gap-2 items-center">
+                                            {schoolLogo && (
+                                                <div className="w-10 h-10 border rounded overflow-hidden flex-shrink-0 bg-white">
+                                                    <img src={schoolLogo} alt="Preview" className="w-full h-full object-contain" />
+                                                </div>
+                                            )}
+                                            <button className="btn btn-secondary w-full justify-center" onClick={() => logoInputRef.current?.click()}>
+                                                <i className="ph ph-image"></i> {schoolLogo ? "변경" : "등록"}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                {error && <div className="error-banner"><i className="ph ph-warning-circle" style={{fontSize:'1.2rem'}}></i> {error}</div>}
+
+                                <input type="file" ref={logoInputRef} onChange={handleLogoChange} className="hidden" accept="image/*" />
+                                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".csv, .xlsx, .xls" multiple />
+
+                                <div 
+                                    className={`dropzone-area ${isDragging ? 'dragging' : ''}`} 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={onDragOver}
+                                    onDragLeave={onDragLeave}
+                                    onDrop={onDrop}
+                                >
+                                    <i className={`ph ${uploadedFiles.length > 0 ? 'ph-files text-indigo-600' : 'ph-upload-simple text-gray-400'} text-5xl mb-2`}></i>
+                                    <div className="font-bold text-lg text-gray-700">
+                                        {uploadedFiles.length > 0 ? uploadedFiles.map(f => f.name).join(', ') : "파일 선택 (다중 선택 가능)"}
+                                    </div>
+                                    <div className="text-sm text-gray-500 mt-1">
+                                        {uploadedFiles.length > 0 ? `${uploadedFiles.length}개의 파일이 준비되었습니다.` : "2학년, 3학년 파일을 동시에 선택하거나 드래그하세요"}
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div className="error-banner">
+                                        <i className="ph ph-warning-circle text-xl"></i> <span>{error}</span>
+                                    </div>
+                                )}
+
                                 <div className="action-bar">
-                                    <button className="btn btn-primary" onClick={handleProcess} disabled={!uploadedFile || isLoading}>
-                                        {isLoading ? <><i className="ph ph-spinner"></i> 처리 중...</> : <><i className="ph ph-database"></i> 데이터 불러오기</>}
+                                    <button className="btn btn-primary" onClick={handleProcess} disabled={uploadedFiles.length === 0 || isLoading}>
+                                        {isLoading ? <><i className="ph ph-spinner animate-spin"></i> 처리 중...</> : <><i className="ph ph-magic-wand"></i> 변환 시작</>}
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {/* 데이터 로드 완료 시 파일 정보 표시 */}
-                        {rawData && (
-                            <div className="no-print" style={{ marginBottom:'1.5rem' }}>
-                                <div className="file-info-bar">
-                                    <i className="ph ph-file-csv file-icon"></i>
-                                    <span className="file-name">{uploadedFile?.name}</span>
-                                    <span className="file-count">· {rawData.length}명 로드됨</span>
-                                    <div style={{flex:1}}></div>
-                                    <button className="btn btn-danger" onClick={handleReset} style={{padding:'0.4rem 1rem', fontSize:'0.85rem'}}>
-                                        <i className="ph ph-arrow-counter-clockwise"></i> 업로드 초기화
+                        {step === 2 && (
+                            <div className="result-section">
+                                {/* 학년 탭 */}
+                                <div className="grade-tabs flex gap-2 mb-4 border-b pb-2">
+                                    <button 
+                                        className={`px-6 py-2 rounded-t-lg font-bold text-lg transition-colors ${activeGrade === '2' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                                        onClick={() => setActiveGrade('2')}
+                                        disabled={!transformedDataByGrade['2'] || transformedDataByGrade['2'].length === 0}
+                                    >
+                                        2학년 {transformedDataByGrade['2'] ? `(${transformedDataByGrade['2'].length}명)` : ''}
+                                    </button>
+                                    <button 
+                                        className={`px-6 py-2 rounded-t-lg font-bold text-lg transition-colors ${activeGrade === '3' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                                        onClick={() => setActiveGrade('3')}
+                                        disabled={!transformedDataByGrade['3'] || transformedDataByGrade['3'].length === 0}
+                                    >
+                                        3학년 {transformedDataByGrade['3'] ? `(${transformedDataByGrade['3'].length}명)` : ''}
                                     </button>
                                 </div>
-                            </div>
-                        )}
 
-                        {/* 각 모드에 rawData 전달 */}
-                        {rawData && appMode === 'convert' && (
-                            <CodeConvertMode rawData={rawData} academicYear={academicYear} semester={semester} schoolLogo={schoolLogo} />
-                        )}
-                        {rawData && appMode === 'roster' && (
-                            <RosterMode rawData={rawData} academicYear={academicYear} semester={semester} schoolLogo={schoolLogo} />
+                                <div className="result-header no-print mb-4 flex flex-col gap-4">
+                                    <div className="flex justify-between items-center w-full flex-wrap gap-4">
+                                        {/* 반 탭 */}
+                                        <div className="result-tabs flex-1">
+                                            <button className={`tab-btn ${displayView.type === 'individual' ? 'active' : ''}`} onClick={() => setDisplayView({ type: 'individual', key: 'all', viewMode: 'table'})}>전체 명렬표</button>
+                                            {Array.from(classDataByGrade[activeGrade]?.keys() || []).map(cls => (
+                                                <button key={cls} className={`tab-btn ${displayView.type === 'class' && displayView.key === cls ? 'active' : ''}`} onClick={() => setDisplayView({ type: 'class', key: cls, viewMode: displayView.viewMode})}>{cls}반</button>
+                                            ))}
+                                            <button className={`tab-btn ${displayView.type === 'elective' ? 'active' : ''} !bg-indigo-100 !text-indigo-800 !border-indigo-300 hover:!bg-indigo-200`} onClick={() => setDisplayView({ type: 'elective', key: 'elective', viewMode: 'seat6'})}>
+                                                <i className="ph ph-squares-four mr-1"></i> 선택과목 좌석표
+                                            </button>
+                                        </div>
+
+                                        {/* 뷰 모드 및 액션 버튼 */}
+                                        <div className="flex gap-4 items-center flex-wrap">
+                                            {displayView.type === 'class' && (
+                                                <div className="view-mode-toggles flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                                                    <button className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${displayView.viewMode === 'table' ? 'bg-white shadow text-indigo-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setDisplayView({...displayView, viewMode: 'table'})}><i className="ph ph-table mr-1"></i>명렬표</button>
+                                                    <button className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${displayView.viewMode === 'seat5' ? 'bg-white shadow text-indigo-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setDisplayView({...displayView, viewMode: 'seat5'})}><i className="ph ph-squares-four mr-1"></i>좌석(5열)</button>
+                                                    <button className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${displayView.viewMode === 'seat6' ? 'bg-white shadow text-indigo-700' : 'text-gray-600 hover:bg-gray-200'}`} onClick={() => setDisplayView({...displayView, viewMode: 'seat6'})}><i className="ph ph-squares-four mr-1"></i>좌석(6열)</button>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="flex gap-2">
+                                                <button className="btn btn-secondary text-sm" onClick={handleReset}><i className="ph ph-arrow-counter-clockwise"></i> 처음으로</button>
+                                                <button className="btn btn-success text-sm" onClick={handleDownloadCSV}><i className="ph ph-file-csv"></i> 엑셀 다운로드</button>
+                                                <button className="btn btn-primary text-sm" onClick={() => window.print()}><i className="ph ph-printer"></i> 인쇄</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 선택과목 드롭다운 및 랜덤 배치 설정 UI */}
+                                {displayView.type === 'elective' && (
+                                    <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 flex flex-col gap-4 no-print">
+                                        <div className="flex flex-wrap gap-4 items-end">
+                                            <div className="flex-1 min-w-[200px]">
+                                                <label className="block text-sm font-bold text-indigo-900 mb-1">선택 과목</label>
+                                                <select className="form-control" value={electiveConfig.subject} onChange={handleSubjectChange}>
+                                                    <option value="">과목을 선택하세요</option>
+                                                    {allAvailableSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="flex-1 min-w-[150px]">
+                                                <label className="block text-sm font-bold text-indigo-900 mb-1">과목 코드</label>
+                                                <select className="form-control" value={electiveConfig.code} onChange={handleCodeChange}>
+                                                    <option value="">코드 선택 (A~J)</option>
+                                                    {validCodesForSubject.map(c => <option key={c} value={c}>{c} 코드</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="flex-1 min-w-[150px]">
+                                                <label className="block text-sm font-bold text-indigo-900 mb-1">담당 교사 (선택)</label>
+                                                <input 
+                                                    type="text" 
+                                                    className="form-control" 
+                                                    placeholder="예: 홍길동" 
+                                                    value={electiveConfig.teacher} 
+                                                    onChange={(e) => setElectiveConfig({...electiveConfig, teacher: e.target.value})} 
+                                                />
+                                            </div>
+                                            <div className="w-[120px]">
+                                                <label className="block text-sm font-bold text-indigo-900 mb-1">좌석 열 수</label>
+                                                <select className="form-control" value={electiveConfig.cols} onChange={(e) => setElectiveConfig({...electiveConfig, cols: parseInt(e.target.value)})}>
+                                                    <option value={5}>5열</option>
+                                                    <option value={6}>6열</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex gap-2 justify-end mt-2 pt-4 border-t border-indigo-200">
+                                            <button 
+                                                className="btn btn-secondary !bg-white hover:!bg-gray-50 h-[46px]" 
+                                                onClick={() => handleGenerateSeatMap(false)}
+                                                disabled={!electiveConfig.code || !electiveConfig.subject}
+                                            >
+                                                <i className="ph ph-sort-ascending"></i> 명렬표 순 배치
+                                            </button>
+                                            <button 
+                                                className="btn btn-primary h-[46px]" 
+                                                onClick={() => handleGenerateSeatMap(true)}
+                                                disabled={!electiveConfig.code || !electiveConfig.subject}
+                                            >
+                                                <i className="ph ph-shuffle"></i> 랜덤 좌석 배치
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {displayedContent && (displayView.type !== 'elective' || electiveConfig.generated) ? (
+                                    <>
+                                        {/* Print Header */}
+                                        <div className="print-header-container">
+                                            <div className="w-full">
+                                                <h1 className="print-title">{displayedContent.title}</h1>
+                                                {displayedContent.subtitle && (
+                                                    <div className="print-subtitle">{displayedContent.subtitle}</div>
+                                                )}
+                                            </div>
+                                            {schoolLogo && <img src={schoolLogo} alt="Logo" className="print-logo" />}
+                                        </div>
+
+                                        {displayView.type === 'elective' ? (
+                                            renderSeatMap(displayedContent.data, electiveConfig.cols)
+                                        ) : displayView.viewMode === 'table' ? (
+                                            <div className="table-wrapper">
+                                                <table className="data-table">
+                                                    <thead>
+                                                        <tr>
+                                                            {columns.map(col => <th key={col}>{col}</th>)}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {displayedContent.data.map((row, idx) => (
+                                                            <tr key={idx}>
+                                                                {columns.map(col => <td key={col}>{row[col] || ''}</td>)}
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            renderSeatMap(displayedContent.data, displayView.viewMode === 'seat5' ? 5 : 6)
+                                        )}
+
+                                        {/* Print Footer */}
+                                        <div className="print-footer">
+                                            출력일: {new Date().toLocaleDateString()}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-10 text-gray-500 font-medium">
+                                        {displayView.type === 'elective' ? '코드와 과목을 선택한 후 좌석 배치를 실행해주세요.' : '선택된 학년/반의 데이터가 없습니다.'}
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </main>
                 </div>
@@ -851,3 +987,4 @@
     </script>
 </body>
 </html>
+
